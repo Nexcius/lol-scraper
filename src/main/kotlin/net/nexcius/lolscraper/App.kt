@@ -5,13 +5,33 @@ import it.skrape.core.htmlDocument
 import it.skrape.extract
 import it.skrape.selects.DocElement
 import it.skrape.skrape
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import java.io.File
+import kotlin.system.exitProcess
+
+//val champions = mapOf(
+//        523 to "Aphelios",
+//        22 to "Ashe",
+//        51 to "Caitlyn",
+//        119 to "Draven",
+//        81 to "Ezreal",
+//        202 to "Jhin",
+//        222 to "Jinx",
+//        145 to "Kaisa",
+//        429 to "Kalista",
+//        96 to "KogMaw",
+//        236 to "Lucian",
+//        21 to "MissFortune",
+//        360 to "Samira",
+//        235 to "Senna",
+//        15 to "Sivir",
+//        18 to "Tristana",
+//        110 to "Varus",
+//        67 to "Vayne",
+//        498 to "Xayah",
+//        157 to "Yasuo",
+//)
+
 
 typealias Champion = String
 
@@ -39,6 +59,8 @@ data class Stats(val champion: Champion,
                  val winRateAgainst: Map<Champion, Float>
 )
 
+
+
 object Titles {
     private const val WINS_LANE_AGAINST = "wins lane against"
     private const val LOSES_LANE_AGAINST = "loses lane against"
@@ -51,9 +73,8 @@ object Titles {
     fun isWinRate(title: String) = title.contains(WINS_AGAINST) || title.contains(LOOSES_AGAINST)
 }
 
-fun main() {
-    val OUTFILE = "out.json"
-    val champs: List<Champion> = listOf(
+fun opgg() {
+    val champions = listOf(
             "Aphelios",
             "Ashe",
             "Caitlyn",
@@ -70,35 +91,111 @@ fun main() {
             "Senna",
             "Sivir",
             "Tristana",
-            "Twitch",
             "Varus",
             "Vayne",
-            "Xayah")
+            "Xayah",
+            "Yasuo",
+    )
 
+    val allResults = champions.map{
+        Thread.sleep(100)
+        it to fetchOPGGStats(it)
+    }.toMap().toSortedMap()
 
+    val file = File("opgg.csv")
+    file.writeText("")
 
-    if (!File(OUTFILE).exists()) {
-        println("File <$OUTFILE> doesn't exist, fetching it again")
-        runBlocking {
-            val results = champs
-                    .map {
-                        delay(100)
-                        scrape(it, Role.ADC, Tier.SILVER)
-                    }
+    file.appendText(",${allResults.keys.joinToString(",")}\n")
 
-            val json = Json.encodeToString(results)
-            File(OUTFILE).writeText(json)
+    allResults.forEach { (champ, vs) ->
+        file.appendText("$champ,")
+
+        val row = allResults.keys.map { vsChamp ->
+            vs[vsChamp] ?: ""
+        }
+
+        file.appendText("${row.joinToString(",")}\n")
+    }
+}
+
+fun fetchOPGGStats(champion: Champion): Map<Champion, String> {
+    println("Fetching stats for $champion")
+    var vsList = mapOf<Champion, String>()
+
+    skrape(HttpFetcher) {
+        request {
+            url = "https://euw.op.gg/champion/$champion/statistics/adc/matchup"
+        }
+
+        extract {
+            htmlDocument {
+                vsList = findFirst(".champion-matchup-champion-list")
+                        .findAll(".champion-matchup-champion-list__item")
+                        .map { cell ->
+                            val container = cell.findFirst(".champion-matchup-list__champion")
+                            container.findFirst("span").text to container.findSecond("span").text
+                        }.toMap()
+            }
         }
     }
 
-    println("Extracting data to CSV")
-    val input = File(OUTFILE).readText()
-    val stats = Json.decodeFromString<List<Stats>>(input)
-    writeToCsv("winrate.csv", stats) { it.winRateAgainst }
-    writeToCsv("lanediff.csv", stats) { it.laneDiffAtFifteen }
-    writeToCsv("pairing.csv", stats) { it.pairingWinRate }
+    return vsList
+}
 
-    println("Done")
+fun main() {
+
+    opgg()
+
+    println("Done!")
+    exitProcess(0)
+
+//    val OUTFILE = "out.json"
+//    val champs: List<Champion> = listOf(
+//            "Aphelios",
+//            "Ashe",
+//            "Caitlyn",
+//            "Draven",
+//            "Ezreal",
+//            "Jhin",
+//            "Jinx",
+//            "Kai'Sa",
+//            "Kalista",
+//            "Kog'Maw",
+//            "Lucian",
+//            "Miss Fortune",
+//            "Samira",
+//            "Senna",
+//            "Sivir",
+//            "Tristana",
+//            "Twitch",
+//            "Varus",
+//            "Vayne",
+//            "Xayah")
+//
+//
+//
+//    if (!File(OUTFILE).exists()) {
+//        println("File <$OUTFILE> doesn't exist, fetching it again")
+//        runBlocking {
+//            val results = champs
+//                    .map {
+//                        delay(100)
+//                        scrape(it, Role.ADC, Tier.SILVER)
+//                    }
+//
+//            val json = Json.encodeToString(results)
+//            File(OUTFILE).writeText(json)
+//        }
+//    }
+//
+//    println("Extracting data to CSV")
+//    val input = File(OUTFILE).readText()
+//    val stats = Json.decodeFromString<List<Stats>>(input)
+//    writeToCsv("winrate.csv", stats) { it.winRateAgainst }
+//    writeToCsv("lanediff.csv", stats) { it.laneDiffAtFifteen }
+//    writeToCsv("pairing.csv", stats) { it.pairingWinRate }
+//
+//    println("Done")
 }
 
 fun writeToCsv(filename: String, statList: List<Stats>, entries: (Stats) -> Map<String, Number>) {
@@ -106,7 +203,7 @@ fun writeToCsv(filename: String, statList: List<Stats>, entries: (Stats) -> Map<
     file.writeText("")
 
     val data = statList.sortedBy { it.champion }.map { it.champion to entries(it) }.toMap()
-    val allVs = data.values.flatMap{it.keys}.toSortedSet()
+    val allVs = data.values.flatMap { it.keys }.toSortedSet()
     file.appendText(",${allVs.joinToString(",")}\n")
 
     data.forEach { (champ, stats) ->

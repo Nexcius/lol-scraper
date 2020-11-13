@@ -15,6 +15,9 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.1")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.0.1")
     implementation("it.skrape:skrapeit-core:1.0.0-alpha8")
+    implementation("com.merakianalytics.orianna:orianna:4.0.0-rc7")
+    implementation("com.beust:klaxon:5.0.1")
+    implementation("io.ktor:ktor-client-apache:1.4.1")
 
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
