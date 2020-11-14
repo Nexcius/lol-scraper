@@ -7,6 +7,7 @@ import it.skrape.selects.DocElement
 import it.skrape.skrape
 import kotlinx.serialization.Serializable
 import java.io.File
+import java.text.NumberFormat
 import kotlin.system.exitProcess
 
 //val champions = mapOf(
@@ -95,6 +96,7 @@ fun opgg() {
             "Vayne",
             "Xayah",
             "Yasuo",
+            "Swain",
     )
 
     val allResults = champions.map{
@@ -111,7 +113,14 @@ fun opgg() {
         file.appendText("$champ,")
 
         val row = allResults.keys.map { vsChamp ->
-            vs[vsChamp] ?: ""
+            vs.getOrElse(vsChamp) {
+                allResults[vsChamp]?.get(champ)
+                        ?.let { 1.0f - NumberFormat.getPercentInstance().parse(it).toFloat() }
+                        ?.toString()
+                        ?: ""
+            }
+
+//            vs[vsChamp] ?: ""
         }
 
         file.appendText("${row.joinToString(",")}\n")
