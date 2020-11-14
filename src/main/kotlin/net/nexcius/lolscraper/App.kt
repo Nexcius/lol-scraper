@@ -142,6 +142,7 @@ fun fetchOPGGStats(champion: Champion): Map<Champion, String> {
     return vsList
 }
 
+
 fun main() {
 
     opgg()

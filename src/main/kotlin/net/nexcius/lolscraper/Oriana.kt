@@ -15,6 +15,7 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
 import org.joda.time.DateTime
+import java.io.File
 import java.net.URL
 
 data class DataSummoner(val name: String, val id: String, val accountId: String) {
@@ -23,8 +24,11 @@ data class DataSummoner(val name: String, val id: String, val accountId: String)
     }
 }
 
+fun getRiotKey(): String = File("key.txt").readText()
+
+
 fun main() {
-    Orianna.setRiotAPIKey("RGAPI-")
+    Orianna.setRiotAPIKey(getRiotKey())
     Orianna.setDefaultRegion(Region.EUROPE_WEST)
     val champions = Orianna.getChampions()
     champions.forEach { println(it.id.toString() + " to " + it.name + ",\n") }
