@@ -24,7 +24,7 @@ data class DataSummoner(val name: String, val id: String, val accountId: String)
 }
 
 fun main() {
-    Orianna.setRiotAPIKey("RGAPI-229bc701-1a47-45b0-9e54-30338c0673a7")
+    Orianna.setRiotAPIKey("RGAPI-")
     Orianna.setDefaultRegion(Region.EUROPE_WEST)
     val champions = Orianna.getChampions()
     champions.forEach { println(it.id.toString() + " to " + it.name + ",\n") }

@@ -3,3 +3,4 @@ build
 .idea/
 /*.csv
 /*.json
+key.txt
