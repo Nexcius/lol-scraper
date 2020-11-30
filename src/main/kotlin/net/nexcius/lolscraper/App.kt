@@ -92,11 +92,13 @@ fun opgg() {
             "Senna",
             "Sivir",
             "Tristana",
+            "Twitch",
             "Varus",
             "Vayne",
             "Xayah",
             "Yasuo",
             "Swain",
+            "Cassiopeia"
     )
 
     val allResults = champions.map{
