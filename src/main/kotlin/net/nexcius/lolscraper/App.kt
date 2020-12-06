@@ -1,3 +1,4 @@
+@file:OptIn(ExperimentalCli::class)
 package net.nexcius.lolscraper
 
 import kotlinx.cli.*
@@ -72,7 +73,6 @@ class CommandFetchChamps : Subcommand("fetch-champs", "Fetch data for champions"
         println("Done")
     }
 }
-
 
 fun main(args: Array<String>) {
     val argParser = ArgParser("lolscraper")
