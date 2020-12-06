@@ -17,7 +17,6 @@ enum class Role {
     ADC, TOP, JUNGLE, MIDDLE, SUPPORT
 }
 
-
 class CommandChamps : Subcommand("champs", "List champions in different roles") {
     val role by option(ArgType.Choice<Role>(), "role", shortName = "r").required()
     val include by option(ArgType.String, shortName = "i").default("")
