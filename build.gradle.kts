@@ -7,6 +7,9 @@ plugins {
 
 repositories {
     jcenter()
+    maven {
+        url = uri("https://kotlin.bintray.com/kotlinx")
+    }
 }
 
 dependencies {
@@ -18,6 +21,7 @@ dependencies {
     implementation("com.merakianalytics.orianna:orianna:4.0.0-rc7")
     implementation("com.beust:klaxon:5.0.1")
     implementation("io.ktor:ktor-client-apache:1.4.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-cli:0.3")
 
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
