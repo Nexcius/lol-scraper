@@ -28,17 +28,12 @@ dependencies {
 }
 
 application {
-    // Define the main class for the application.
     mainClassName = "net.nexcius.lolscraper.AppKt"
 }
-//
-//tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-//    kotlinOptions { /*...*/ }
-//V}
+
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
     kotlinOptions {
         jvmTarget = "11"
         freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
     }
 }
-
