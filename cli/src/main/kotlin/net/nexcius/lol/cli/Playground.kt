@@ -1,4 +1,4 @@
-package net.nexcius.lolscraper
+package net.nexcius.lol.cli
 
 import com.beust.klaxon.Klaxon
 import com.merakianalytics.orianna.Orianna

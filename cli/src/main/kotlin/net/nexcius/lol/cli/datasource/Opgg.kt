@@ -1,11 +1,11 @@
-package net.nexcius.lolscraper.datasource
+package net.nexcius.lol.cli.datasource
 
 import it.skrape.core.fetcher.HttpFetcher
 import it.skrape.core.htmlDocument
 import it.skrape.extract
 import it.skrape.skrape
-import net.nexcius.lolscraper.ChampionName
-import net.nexcius.lolscraper.Role
+import net.nexcius.lol.cli.ChampionName
+import net.nexcius.lol.cli.Role
 import java.text.NumberFormat
 
 object Opgg : DataSource {

@@ -1,7 +1,7 @@
-package net.nexcius.lolscraper.datasource
+package net.nexcius.lol.cli.datasource
 
-import net.nexcius.lolscraper.ChampionName
-import net.nexcius.lolscraper.Role
+import net.nexcius.lol.cli.ChampionName
+import net.nexcius.lol.cli.Role
 
 interface DataSource {
     fun gather(champions: Set<ChampionName>, role: Role): Map<ChampionName, Map<ChampionName, Float>> {

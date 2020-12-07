@@ -1,9 +1,9 @@
 @file:OptIn(ExperimentalCli::class)
-package net.nexcius.lolscraper
+package net.nexcius.lol.cli
 
 import kotlinx.cli.*
-import net.nexcius.lolscraper.datasource.DataSource
-import net.nexcius.lolscraper.datasource.Opgg
+import net.nexcius.lol.cli.datasource.DataSource
+import net.nexcius.lol.cli.datasource.Opgg
 import java.util.*
 import java.io.File
 

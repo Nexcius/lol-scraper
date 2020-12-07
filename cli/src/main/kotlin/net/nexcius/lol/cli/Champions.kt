@@ -1,6 +1,6 @@
-package net.nexcius.lolscraper
+package net.nexcius.lol.cli
 
-import net.nexcius.lolscraper.Role.*
+import net.nexcius.lol.cli.Role.*
 
 data class Champion(val name: ChampionName, val id: Int, val roles: List<Role>, val aliases: List<ChampionName> = listOf())
 

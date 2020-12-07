@@ -1,4 +1,4 @@
-package net.nexcius.lolscraper
+package net.nexcius.lol.cli
 
 import java.io.File
 

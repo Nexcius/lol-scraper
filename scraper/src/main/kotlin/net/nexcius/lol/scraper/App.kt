@@ -3,13 +3,75 @@
  */
 package net.nexcius.lol.scraper
 
-class App {
-    val greeting: String
-        get() {
-            return "Hello world."
-        }
-}
+import com.merakianalytics.orianna.Orianna
+import com.merakianalytics.orianna.types.common.Region
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
+import org.joda.time.DateTime
+import org.joda.time.Duration
+import java.io.File
 
-fun main(args: Array<String>) {
-    println(App().greeting)
+const val SEED_USER_NAME = "Nexcius"
+const val BATCH_USER_COUNT = 10
+val lookback: Duration = Duration.standardDays(2)
+
+fun getRiotKey(): String = File("key.txt").readText()
+
+// TODO: Fetch users from DB
+fun fetchUsersFromDB() = listOf<String>("Nexcius", "PezKe")
+
+fun main(args: Array<String>) = runBlocking {
+    println(getRiotKey())
+
+    Orianna.setRiotAPIKey(getRiotKey())
+    Orianna.setDefaultRegion(Region.EUROPE_WEST)
+
+    val collectionFlow = flow {
+        // TODO: Fetch a list of users from DB, otherwise use seed user id
+        val usersToUpdate = fetchUsersFromDB()
+
+        if (usersToUpdate.isNotEmpty()) {
+            println("Updating users: $usersToUpdate")
+            usersToUpdate.forEach { emit(it) }
+        } else {
+            println("No users found in DB, defaulting to seed user <$SEED_USER_NAME>")
+            emit(SEED_USER_NAME)
+        }
+
+        println("Processed $BATCH_USER_COUNT users")
+    }
+
+        .transform {
+            emit(Orianna.summonerNamed(it).get())
+        }
+
+        .transform { summoner ->
+            println("Get match history for ${summoner.name}")
+
+            val matches = Orianna.matchHistoryForSummoner(summoner)
+                .withStartTime(DateTime.now().minus(lookback))
+                .get().toList()
+            println("Found ${matches.size} matches")
+
+            // TODO: Don't limit how many matches we take
+            matches.take(5).forEach {
+                emit(it)
+            }
+
+            // TODO: Update the last seen of the current summoner
+            println("Update user in database")
+        }
+        .onCompletion { if (it == null) println("Completed batch") }
+
+
+    // TODO: While running, keep fetching data
+    // while(running)
+
+    val matches = collectionFlow.toList()
+    val seenSummoners = matches.flatMap { match -> match.participants.toList().map { it.summoner.name } }
+
+    // TODO: Store match data
+    // TODO: Add all summoners to database with last updated set at UNIX time 0 if not there
+
+    println("Saw users: $seenSummoners")
 }
