@@ -5,8 +5,17 @@ package net.nexcius.lol.scraper
 
 import com.merakianalytics.orianna.Orianna
 import com.merakianalytics.orianna.types.common.Region
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.flow.transform
+import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import net.nexcius.lol.scraper.repository.InMemoryDatabase
+import net.nexcius.lol.scraper.repository.LastSeenEntry
+import net.nexcius.lol.scraper.repository.load
+import net.nexcius.lol.scraper.repository.save
 import org.joda.time.DateTime
 import org.joda.time.Duration
 import java.io.File
@@ -17,8 +26,17 @@ val lookback: Duration = Duration.standardDays(2)
 
 fun getRiotKey(): String = File("key.txt").readText()
 
-// TODO: Fetch users from DB
-fun fetchUsersFromDB() = listOf<String>("Nexcius", "PezKe")
+fun List<LastSeenEntry>.usersToRetrieve(): List<String> {
+    val outdatedTime = DateTime.now().minus(lookback)
+
+    return this.asSequence()
+        .filter {
+            it.value.isBefore(outdatedTime)
+        }
+        .map { it.key }
+        .take(BATCH_USER_COUNT)
+        .toList()
+}
 
 fun main(args: Array<String>) = runBlocking {
     println(getRiotKey())
@@ -26,9 +44,13 @@ fun main(args: Array<String>) = runBlocking {
     Orianna.setRiotAPIKey(getRiotKey())
     Orianna.setDefaultRegion(Region.EUROPE_WEST)
 
+    val lastSeenDb = mutableListOf<LastSeenEntry>() //.apply { load("lastseendb.json") } // TODO: Re-enable
+//    val matchDb = InMemoryDatabase<Match>("matchdb.json").apply { init() }
+
+
     val collectionFlow = flow {
         // TODO: Fetch a list of users from DB, otherwise use seed user id
-        val usersToUpdate = fetchUsersFromDB()
+        val usersToUpdate = lastSeenDb.usersToRetrieve()
 
         if (usersToUpdate.isNotEmpty()) {
             println("Updating users: $usersToUpdate")
@@ -59,6 +81,8 @@ fun main(args: Array<String>) = runBlocking {
             }
 
             // TODO: Update the last seen of the current summoner
+            lastSeenDb.removeIf { it.key == summoner.name }
+            lastSeenDb.add(LastSeenEntry(summoner.name, DateTime.now()))
             println("Update user in database")
         }
         .onCompletion { if (it == null) println("Completed batch") }
@@ -70,8 +94,16 @@ fun main(args: Array<String>) = runBlocking {
     val matches = collectionFlow.toList()
     val seenSummoners = matches.flatMap { match -> match.participants.toList().map { it.summoner.name } }
 
+    val newSummoners = seenSummoners - lastSeenDb.map { it.key }
+    lastSeenDb.addAll(newSummoners.map(LastSeenEntry::NeverSeen))
+
+    println(Json.encodeToString(matches))
+
+    println(lastSeenDb)
+    lastSeenDb.save("lastseendb.json")
+
     // TODO: Store match data
     // TODO: Add all summoners to database with last updated set at UNIX time 0 if not there
 
-    println("Saw users: $seenSummoners")
+//    println("Saw users: $seenSummoners")
 }
