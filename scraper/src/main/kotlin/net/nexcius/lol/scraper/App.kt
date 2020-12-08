@@ -13,6 +13,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import net.nexcius.lol.scraper.repository.LastUpdatedEntry
+import net.nexcius.lol.scraper.repository.load
 import net.nexcius.lol.scraper.repository.save
 import org.joda.time.DateTime
 import org.joda.time.Duration
@@ -29,7 +30,7 @@ fun List<LastUpdatedEntry>.usersToRetrieve(): List<String> {
 
     return this.asSequence()
         .filter {
-            it.lastUpdated.isBefore(outdatedTime)
+            it.lastUpdated == null || it.lastUpdated.isBefore(outdatedTime)
         }
         .map { it.summonerName }
         .take(BATCH_USER_COUNT)
@@ -42,7 +43,7 @@ fun main(args: Array<String>) = runBlocking {
     Orianna.setRiotAPIKey(getRiotKey())
     Orianna.setDefaultRegion(Region.EUROPE_WEST)
 
-    val lastSeenDb = mutableListOf<LastUpdatedEntry>() //.apply { load("lastseendb.json") } // TODO: Re-enable
+    val lastSeenDb = mutableListOf<LastUpdatedEntry>().apply { load("lastseendb.json") } // TODO: Re-enable
 //    val matchDb = InMemoryDatabase<Match>("matchdb.json").apply { init() }
 
 
@@ -57,8 +58,6 @@ fun main(args: Array<String>) = runBlocking {
             println("No users found in DB, defaulting to seed user <$SEED_USER_NAME>")
             emit(SEED_USER_NAME)
         }
-
-        println("Processed $BATCH_USER_COUNT users")
     }
 
         .transform {
@@ -66,22 +65,17 @@ fun main(args: Array<String>) = runBlocking {
         }
 
         .transform { summoner ->
-            println("Get match history for ${summoner.name}")
-
             val matches = Orianna.matchHistoryForSummoner(summoner)
                 .withStartTime(DateTime.now().minus(lookback))
                 .get().toList()
-            println("Found ${matches.size} matches")
+//            println("Found ${matches.size} matches for ${summoner.name}")
 
-            // TODO: Don't limit how many matches we take
-            matches.take(5).forEach {
+            matches.forEach {
                 emit(it)
             }
 
-            // TODO: Update the last seen of the current summoner
             lastSeenDb.removeIf { it.summonerName == summoner.name }
             lastSeenDb.add(LastUpdatedEntry(summoner.name, DateTime.now()))
-            println("Update user in database")
         }
         .onCompletion { if (it == null) println("Completed batch") }
 
@@ -95,13 +89,18 @@ fun main(args: Array<String>) = runBlocking {
     val newSummoners = seenSummoners - lastSeenDb.map { it.summonerName }
     lastSeenDb.addAll(newSummoners.map(LastUpdatedEntry::neverUpdated))
 
-    println(Json.encodeToString(matches))
-
-    println(lastSeenDb)
+    println("Saving last updated DB")
     lastSeenDb.save("lastseendb.json")
 
-    // TODO: Store match data
-    // TODO: Add all summoners to database with last updated set at UNIX time 0 if not there
+    println("Writing matches")
+    val matchDump = File("matchdump.json")
+    matches.forEach {
+        matchDump.appendText("${it.toJSON()}\n")
+    }
 
-//    println("Saw users: $seenSummoners")
+    // TODO: Store match data
+
+    println("Fetched ${matches.size} matches and saw ${newSummoners.size} new summoners")
 }
+
+

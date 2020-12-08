@@ -10,9 +10,9 @@ import java.io.File
 
 
 @Serializable
-data class LastUpdatedEntry(val summonerName: String, @Serializable(with = DateTimeSerializer::class) val lastUpdated: DateTime) {
+data class LastUpdatedEntry(val summonerName: String, @Serializable(with = DateTimeSerializer::class) val lastUpdated: DateTime?) {
     companion object {
-        fun neverUpdated(summonerName: String) = LastUpdatedEntry(summonerName, DateTime.now().withYear(2000))
+        fun neverUpdated(summonerName: String) = LastUpdatedEntry(summonerName, null)
     }
 }
 
