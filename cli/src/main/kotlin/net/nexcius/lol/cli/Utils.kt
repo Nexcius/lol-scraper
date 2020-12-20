@@ -1,5 +1,6 @@
 package net.nexcius.lol.cli
 
+import java.text.NumberFormat
 import java.util.*
 
 fun resolveChampsFromArgs(role: Role, include: String, exclude: String): SortedSet<ChampionName> {
@@ -55,3 +56,5 @@ fun levenshtein(
         })
     }).last()
 }
+
+fun String.parsePercentage() = NumberFormat.getPercentInstance().parse(this).toFloat()

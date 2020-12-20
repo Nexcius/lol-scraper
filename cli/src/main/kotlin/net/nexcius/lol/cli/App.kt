@@ -2,10 +2,9 @@
 package net.nexcius.lol.cli
 
 import kotlinx.cli.*
-import net.nexcius.lol.cli.datasource.DataSource
 import net.nexcius.lol.cli.datasource.Opgg
-import java.util.*
-import java.io.File
+import net.nexcius.lol.cli.model.MatchUpData.Companion.fillMissing
+import kotlin.system.exitProcess
 
 
 typealias ChampionName = String
@@ -13,6 +12,8 @@ typealias ChampionName = String
 enum class Source {
     OPGG;
 }
+
+
 
 enum class Role {
     ADC, TOP, JUNGLE, MIDDLE, SUPPORT
@@ -31,56 +32,60 @@ class CommandChamps : Subcommand("champs", "List champions in different roles") 
 }
 
 class CommandFetch : Subcommand("fetch", "Fetch data for champions") {
-    val source by argument(ArgType.Choice<Source>(), "source")
-    val role by option(ArgType.Choice<Role>(), "role", shortName = "r").required()
-    val output by option(ArgType.String, shortName = "o").default("output.csv")
-    val include by option(ArgType.String, shortName = "i").default("")
-    val exclude by option(ArgType.String, shortName = "e").default("")
+    private enum class FetchVariant {
+        ALL, MATCHUPS, BASE;
+    }
+
+    private val variant by argument(ArgType.Choice<FetchVariant>(), "variant")
+    private val role by option(ArgType.Choice<Role>(), "role", shortName = "r").required()
+    private val source by option(ArgType.Choice<Source>(), "source", shortName = "s").default(Source.OPGG)
+
+    private val include by option(ArgType.String, shortName = "i").default("")
+    private val exclude by option(ArgType.String, shortName = "e").default("")
 
     override fun execute() {
-        val champs = resolveChampsFromArgs(role, include, exclude)
+        val champions = resolveChampsFromArgs(role, include, exclude)
+        println("Fetching data for champions: ${champions.joinToString(", ")}")
 
-        println("Fetching data for champions: ${champs.joinToString(", ")}")
-        val data = when(source) {
-            Source.OPGG -> Opgg.gather(champs, role)
+        val dataSource = when(source) {
+            Source.OPGG -> Opgg
         }
 
-        println("Writing results to file: $output")
-        OutputWriter.write(output, data)
+        if (variant == FetchVariant.ALL || variant == FetchVariant.BASE) {
+            val baseData = champions.map {
+                Thread.sleep(100)
+                dataSource.getBaseData(it, role)
+            }
+
+            val fileName = "${source.name.toLowerCase()}-basedata.csv"
+            println("Writing base data to file: $fileName")
+            OutputWriter.writeBaseData(fileName, baseData)
+        }
+
+        if (variant == FetchVariant.ALL || variant == FetchVariant.MATCHUPS) {
+            val matchUps = champions.map {
+                Thread.sleep(100)
+                dataSource.getMatchUps(it, role)
+            }.fillMissing()
+
+            val fileName = "${source.name.toLowerCase()}-matchups.csv"
+            println("Writing match-ups to file: $fileName")
+            OutputWriter.writeMatchUpsData(fileName, matchUps)
+        }
 
         println("Done")
     }
 }
 
-class CommandFetchChamps : Subcommand("fetch-champs", "Fetch data for champions") {
-    val source by argument(ArgType.Choice<Source>())
-    val champFile by argument(ArgType.String)
-    val role by option(ArgType.Choice<Role>(), "role", shortName = "r").required()
-    val output by option(ArgType.String, shortName = "o").default("output.csv")
-
-    override fun execute() {
-        val file = File(champFile)
-        val champs = file.useLines{ it.toList() }.map(::resolveChampionName).toSortedSet()
-
-        println("Fetching data for champions: ${champs.joinToString(", ")}")
-        val data = when(source) {
-            Source.OPGG -> Opgg.gather(champs, role)
-        }
-
-        println("Writing results to file: $output")
-        OutputWriter.write(output, data)
-
-        println("Done")
-    }
-}
 
 fun main(args: Array<String>) {
     val argParser = ArgParser("lolscraper")
 
     val cmdChamps = CommandChamps()
     val cmdFetch = CommandFetch()
-    val cmdFetchChamps = CommandFetchChamps()
 
-    argParser.subcommands(cmdChamps, cmdFetch, cmdFetchChamps)
+    argParser.subcommands(cmdChamps, cmdFetch)
     argParser.parse(args)
+
+    exitProcess(0)
 }
